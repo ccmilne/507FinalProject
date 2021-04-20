@@ -2,3 +2,6 @@ cache_census.json
 census_api.py
 zillow_by_state.csv
 documents
+scratch.py
+zillow_completed.csv
+__pychache__/

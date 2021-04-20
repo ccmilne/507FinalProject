@@ -6,12 +6,13 @@
 from requests_oauthlib import OAuth1
 from bs4 import BeautifulSoup
 import requests, json, csv, time, operator
-import sqlite3, logging, sys
+import sqlite3, logging, sys, os
 from sqlite3 import Error
 
 ### Caching
 CACHE_FILENAME = 'cache_census.json'
 CACHE_DICT = {}
+UNIQUE_CACHE_KEY = 'usual'
 CENSUS_API_KEY = '3d095bab381ec8a891e05c0fe05da954f2710317'
 CENSUS_BASEURL = 'https://api.census.gov/data/timeseries/pseo/earnings'
 
@@ -107,36 +108,103 @@ def convert_zillow_to_CSV(zillow_dict):
         csvwriter.writerow(fields) # writing the fields
         csvwriter.writerows(rows)  # writing the data rows
 
+def build_zillow_complete_dict(csv_file):
+    ''' '''
+    with open(csv_file, 'r') as file:
+        reader = csv.reader(file)
+        zillow_states = {}
+        for row in reader: #every row in reader contains a state and the median home price values by month
+            # size_rank = row[1]
+            state_name = row[2]
+            # region_type = row[3]
+            # state_abbrev = row[4]
+            all_months = list(row[5:])
+
+            #add data to dictionary
+            if state_name not in zillow_states:
+                zillow_states[state_name] = all_months
+
+        del zillow_states['RegionName']
+
+    return zillow_states
+
+def convert_zillow_complete_to_csv(zillow_complete_dict):
+    '''
+    '''
+    fields = ['State',
+        '1_31_1996', '2_29_1996', '3_31_1996', '4_30_1996', '5_31_1996', '6_30_1996', '7_31_1996', '8_31_1996', '9_30_1996', '10_31_1996', '11_30_1996', '12_31_1996',
+        '1_31_1997', '2_28_1997', '3_31_1997', '4_30_1997', '5_31_1997', '6_30_1997', '7_31_1997', '8_31_1997', '9_30_1997', '10_31_1997', '11_30_1997', '12_31_1997',
+        '1_31_1998', '2_28_1998', '3_31_1998', '4_30_1998', '5_31_1998', '6_30_1998', '7_31_1998', '8_31_1998', '9_30_1998', '10_31_1998', '11_30_1998', '12_31_1998',
+        '1_31_1999', '2_28_1999', '3_31_1999', '4_30_1999', '5_31_1999', '6_30_1999', '7_31_1999', '8_31_1999', '9_30_1999', '10_31_1999', '11_30_1999', '12_31_1999',
+        '1_31_2000', '2_29_2000', '3_31_2000', '4_30_2000', '5_31_2000', '6_30_2000', '7_31_2000', '8_31_2000', '9_30_2000', '10_31_2000', '11_30_2000', '12_31_2000',
+        '1_31_2001', '2_28_2001', '3_31_2001', '4_30_2001', '5_31_2001', '6_30_2001', '7_31_2001', '8_31_2001', '9_30_2001', '10_31_2001', '11_30_2001', '12_31_2001', 
+        '1_31_2002', '2_28_2002', '3_31_2002', '4_30_2002', '5_31_2002', '6_30_2002', '7_31_2002', '8_31_2002', '9_30_2002', '10_31_2002', '11_30_2002', '12_31_2002', 
+        '1_31_2003', '2_28_2003', '3_31_2003', '4_30_2003', '5_31_2003', '6_30_2003', '7_31_2003', '8_31_2003', '9_30_2003', '10_31_2003', '11_30_2003', '12_31_2003', 
+        '1_31_2004', '2_29_2004', '3_31_2004', '4_30_2004', '5_31_2004', '6_30_2004', '7_31_2004', '8_31_2004', '9_30_2004', '10_31_2004', '11_30_2004', '12_31_2004', 
+        '1_31_2005', '2_28_2005', '3_31_2005', '4_30_2005', '5_31_2005', '6_30_2005', '7_31_2005', '8_31_2005', '9_30_2005', '10_31_2005', '11_30_2005', '12_31_2005', 
+        '1_31_2006', '2_28_2006', '3_31_2006', '4_30_2006', '5_31_2006', '6_30_2006', '7_31_2006', '8_31_2006', '9_30_2006', '10_31_2006', '11_30_2006', '12_31_2006', 
+        '1_31_2007', '2_28_2007', '3_31_2007', '4_30_2007', '5_31_2007', '6_30_2007', '7_31_2007', '8_31_2007', '9_30_2007', '10_31_2007', '11_30_2007', '12_31_2007', 
+        '1_31_2008', '2_29_2008', '3_31_2008', '4_30_2008', '5_31_2008', '6_30_2008', '7_31_2008', '8_31_2008', '9_30_2008', '10_31_2008', '11_30_2008', '12_31_2008', 
+        '1_31_2009', '2_28_2009', '3_31_2009', '4_30_2009', '5_31_2009', '6_30_2009', '7_31_2009', '8_31_2009', '9_30_2009', '10_31_2009', '11_30_2009', '12_31_2009', 
+        '1_31_2010', '2_28_2010', '3_31_2010', '4_30_2010', '5_31_2010', '6_30_2010', '7_31_2010', '8_31_2010', '9_30_2010', '10_31_2010', '11_30_2010', '12_31_2010', 
+        '1_31_2011', '2_28_2011', '3_31_2011', '4_30_2011', '5_31_2011', '6_30_2011', '7_31_2011', '8_31_2011', '9_30_2011', '10_31_2011', '11_30_2011', '12_31_2011', 
+        '1_31_2012', '2_29_2012', '3_31_2012', '4_30_2012', '5_31_2012', '6_30_2012', '7_31_2012', '8_31_2012', '9_30_2012', '10_31_2012', '11_30_2012', '12_31_2012', 
+        '1_31_2013', '2_28_2013', '3_31_2013', '4_30_2013', '5_31_2013', '6_30_2013', '7_31_2013', '8_31_2013', '9_30_2013', '10_31_2013', '11_30_2013', '12_31_2013', 
+        '1_31_2014', '2_28_2014', '3_31_2014', '4_30_2014', '5_31_2014', '6_30_2014', '7_31_2014', '8_31_2014', '9_30_2014', '10_31_2014', '11_30_2014', '12_31_2014', 
+        '1_31_2015', '2_28_2015', '3_31_2015', '4_30_2015', '5_31_2015', '6_30_2015', '7_31_2015', '8_31_2015', '9_30_2015', '10_31_2015', '11_30_2015', '12_31_2015', 
+        '1_31_2016', '2_29_2016', '3_31_2016', '4_30_2016', '5_31_2016', '6_30_2016', '7_31_2016', '8_31_2016', '9_30_2016', '10_31_2016', '11_30_2016', '12_31_2016', 
+        '1_31_2017', '2_28_2017', '3_31_2017', '4_30_2017', '5_31_2017', '6_30_2017', '7_31_2017', '8_31_2017', '9_30_2017', '10_31_2017', '11_30_2017', '12_31_2017', 
+        '1_31_2018', '2_28_2018', '3_31_2018', '4_30_2018', '5_31_2018', '6_30_2018', '7_31_2018', '8_31_2018', '9_30_2018', '10_31_2018', '11_30_2018', '12_31_2018', 
+        '1_31_2019', '2_28_2019', '3_31_2019', '4_30_2019', '5_31_2019', '6_30_2019', '7_31_2019', '8_31_2019', '9_30_2019', '10_31_2019', '11_30_2019', '12_31_2019', 
+        '1_31_2020', '2_29_2020', '3_31_2020', '4_30_2020', '5_31_2020', '6_30_2020', '7_31_2020', '8_31_2020', '9_30_2020', '10_31_2020', '11_30_2020', '12_31_2020', 
+        '1_31_2021', '2_28_2021']
+
+    rows = []
+
+    for key, value_list in zillow_complete_dict.items():
+        row = []
+        row.append(key)
+
+        for val in value_list:
+            row.append(val)
+
+        rows.append(row)
+
+    filename = 'zillow_complete.csv'
+    with open(filename, 'w', newline='') as csvfile:
+        csvwriter = csv.writer(csvfile) # creating a csv writer object
+        csvwriter.writerow(fields) # writing the fields
+        csvwriter.writerows(rows)  # writing the data rows
+
 
 ### Census Data
 def get_census_data(url):
     '''fetches Census API
 
-    Given a search term, this function will retrieve the iTunes
-    media types that correspond with the search term for a specified
-    number of returns (specified in limit).
+    Given a link, this function will retrieve the Census
+    API data from the Census Bureau for statistics on educational
+    attainment data.
 
     Parameters
     ----------
-    term: any term (Robert Downey Jr., The Beatles, etc.)
-    limit: the number of searches returned across categories
+    url: the specific base url and chained variables for the desired outcome
 
     returns:
     -------
     Dictionary of key as State and value as # of residents with a bachelor's degree
     '''
-    unique_key = url[-1:39]
-    #print(unique_key)
 
-    if unique_key in CACHE_DICT.keys():
-        print("Using Cache")
-        return CACHE_DICT[unique_key]
+    if os.path.isfile('cache_census.json') and os.access('cache_census.json', os.R_OK):
+        print('Using Cache')
+        with open('cache_census.json', 'r', newline='') as cache_file:
+            cache = json.load(cache_file)
+            return cache[UNIQUE_CACHE_KEY]
 
     else:
-        print("Fetching")
-        CACHE_DICT[unique_key] = requests.get(url).json()
+        print("Fetching from API")
+        CACHE_DICT[UNIQUE_CACHE_KEY] = requests.get(url).json()
         save_cache(CACHE_DICT)
-        return CACHE_DICT[unique_key]
+        return CACHE_DICT[UNIQUE_CACHE_KEY]
 
 def parse_census_data(census_data):
     '''
@@ -297,19 +365,60 @@ def create_zillow_table():
     curs.execute("DROP TABLE IF EXISTS Zillow;")
     curs.execute("CREATE TABLE IF NOT EXISTS Zillow (State TEXT PRIMARY KEY, Median_Home_Value INT);")
 
-    reader = csv.reader(open('zillow.csv', 'r'), delimiter=',')
-    insert_str = '''
-        INSERT INTO Zillow
-        VALUES (?, ?)
-    '''
+    with open("zillow.csv", "r") as csvfile:
+        csvreader = csv.reader(csvfile)
+        next(csvreader)
+        insert_str = '''
+            INSERT INTO Zillow
+            VALUES (?, ?)
+        '''
 
-    for row in reader:
-        curs.execute(insert_str, (
-            row[0], #State
-            row[1], #Median Home Value
-        ))
+        for row in csvreader:
+            curs.execute(insert_str, (
+                row[0], #State
+                row[1], #Median Home Value
+            ))
 
     conn.commit()
+
+# def create_z2_table():
+#     conn = sqlite3.connect("project.db")
+#     curs = conn.cursor()
+#     curs.execute("DROP TABLE IF EXISTS Zillow_Complete;")
+
+#     create_str = '''
+#         CREATE TABLE IF NOT EXISTS Zillow_Complete (
+#             State TEXT PRIMARY KEY,
+#             1_31_1996 INT,2_29_1996 INT,3_31_1996 INT,4_30_1996 INT,5_31_1996 INT,6_30_1996 INT,7_31_1996 INT,8_31_1996 INT,9_30_1996 INT,10_31_1996 INT,11_30_1996 INT,12_31_1996 INT,1_31_1997 INT,2_28_1997 INT,3_31_1997 INT,4_30_1997 INT,
+#             5_31_1997 INT,6_30_1997 INT,7_31_1997 INT,8_31_1997 INT,9_30_1997 INT,10_31_1997 INT,11_30_1997 INT,12_31_1997 INT,1_31_1998 INT,2_28_1998 INT,3_31_1998 INT,4_30_1998 INT,5_31_1998 INT,6_30_1998 INT,7_31_1998 INT,8_31_1998 INT,9_30_1998 INT,10_31_1998 INT,11_30_1998 INT,12_31_1998 INT,1_31_1999 INT,2_28_1999 INT,3_31_1999 INT,4_30_1999 INT,5_31_1999 INT,6_30_1999 INT,7_31_1999 INT,8_31_1999 INT,9_30_1999 INT,10_31_1999 INT,11_30_1999 INT,12_31_1999 INT,1_31_2000 INT,2_29_2000 INT,3_31_2000 INT,4_30_2000 INT,5_31_2000 INT,6_30_2000 INT,7_31_2000 INT,8_31_2000 INT,9_30_2000 INT,10_31_2000 INT,11_30_2000 INT,12_31_2000 INT,1_31_2001 INT,2_28_2001 INT,3_31_2001 INT,4_30_2001 INT,5_31_2001 INT,6_30_2001 INT,7_31_2001 INT,8_31_2001 INT,9_30_2001 INT,10_31_2001 INT,11_30_2001 INT,12_31_2001 INT,1_31_2002 INT,2_28_2002 INT,3_31_2002 INT,4_30_2002 INT,5_31_2002 INT,6_30_2002 INT,7_31_2002 INT,8_31_2002 INT,9_30_2002 INT,10_31_2002 INT,11_30_2002 INT,12_31_2002 INT,1_31_2003 INT,2_28_2003 INT,3_31_2003 INT,4_30_2003 INT,5_31_2003 INT,6_30_2003 INT,7_31_2003 INT,8_31_2003 INT,9_30_2003 INT,10_31_2003 INT,11_30_2003 INT,12_31_2003 INT,1_31_2004 INT,2_29_2004 INT,3_31_2004 INT,4_30_2004 INT,5_31_2004 INT,6_30_2004 INT,7_31_2004 INT,8_31_2004 INT,9_30_2004 INT,10_31_2004 INT,11_30_2004 INT,12_31_2004 INT,1_31_2005 INT,2_28_2005 INT,3_31_2005 INT,4_30_2005 INT,5_31_2005 INT,6_30_2005 INT,7_31_2005 INT,8_31_2005 INT,9_30_2005 INT,10_31_2005 INT,11_30_2005 INT,12_31_2005 INT,1_31_2006 INT,2_28_2006 INT,3_31_2006 INT,4_30_2006 INT,5_31_2006 INT,6_30_2006 INT,7_31_2006 INT,8_31_2006 INT,9_30_2006 INT,10_31_2006 INT,11_30_2006 INT,12_31_2006 INT,1_31_2007 INT,2_28_2007 INT,3_31_2007 INT,4_30_2007 INT,5_31_2007 INT,6_30_2007 INT,7_31_2007 INT,8_31_2007 INT,9_30_2007 INT,10_31_2007 INT,11_30_2007 INT,12_31_2007 INT,1_31_2008 INT,2_29_2008 INT,3_31_2008 INT,4_30_2008 INT,5_31_2008 INT,6_30_2008 INT,7_31_2008 INT,8_31_2008 INT,9_30_2008 INT,10_31_2008 INT,11_30_2008 INT,12_31_2008 INT,1_31_2009 INT,2_28_2009 INT,3_31_2009 INT,4_30_2009 INT,5_31_2009 INT,6_30_2009 INT,7_31_2009 INT,8_31_2009 INT,9_30_2009 INT,10_31_2009 INT,11_30_2009 INT,12_31_2009 INT,1_31_2010 INT,2_28_2010 INT,3_31_2010 INT,4_30_2010 INT,5_31_2010 INT,6_30_2010 INT,7_31_2010 INT,8_31_2010 INT,9_30_2010 INT,10_31_2010 INT,11_30_2010 INT,12_31_2010 INT,1_31_2011 INT,2_28_2011 INT,3_31_2011 INT,4_30_2011 INT,5_31_2011 INT,6_30_2011 INT,7_31_2011 INT,8_31_2011 INT,9_30_2011 INT,10_31_2011 INT,11_30_2011 INT,12_31_2011 INT,1_31_2012 INT,2_29_2012 INT,3_31_2012 INT,4_30_2012 INT,5_31_2012 INT,6_30_2012 INT,7_31_2012 INT,8_31_2012 INT,        9_30_2012 INT,10_31_2012 INT,11_30_2012 INT,12_31_2012 INT,1_31_2013 INT,2_28_2013 INT,3_31_2013 INT,4_30_2013 INT,5_31_2013 INT,6_30_2013 INT,7_31_2013 INT,8_31_2013 INT,9_30_2013 INT,10_31_2013 INT,11_30_2013 INT,12_31_2013 INT,1_31_2014 INT,2_28_2014 INT,3_31_2014 INT,4_30_2014 INT,5_31_2014 INT,6_30_2014 INT,7_31_2014 INT,8_31_2014 INT,9_30_2014 INT,10_31_2014 INT,11_30_2014 INT,12_31_2014 INT,1_31_2015 INT,2_28_2015 INT,3_31_2015 INT,4_30_2015 INT,5_31_2015 INT,6_30_2015 INT,7_31_2015 INT,8_31_2015 INT,9_30_2015 INT,10_31_2015 INT,11_30_2015 INT,12_31_2015 INT,1_31_2016 INT,2_29_2016 INT,3_31_2016 INT,4_30_2016 INT,5_31_2016 INT,6_30_2016 INT,7_31_2016 INT,8_31_2016 INT,9_30_2016 INT,10_31_2016 INT,11_30_2016 INT,12_31_2016 INT,1_31_2017 INT,2_28_2017 INT,3_31_2017 INT,4_30_2017 INT,5_31_2017 INT,6_30_2017 INT,7_31_2017 INT,8_31_2017 INT,9_30_2017 INT,10_31_2017 INT,11_30_2017 INT,12_31_2017 INT,1_31_2018 INT,2_28_2018 INT,3_31_2018 INT,4_30_2018 INT,5_31_2018 INT,6_30_2018 INT,7_31_2018 INT,8_31_2018 INT,9_30_2018 INT,10_31_2018 INT,11_30_2018 INT,12_31_2018 INT,1_31_2019 INT,2_28_2019 INT,3_31_2019 INT,4_30_2019 INT,5_31_2019 INT,6_30_2019 INT,7_31_2019 INT,8_31_2019 INT,9_30_2019 INT,10_31_2019 INT,11_30_2019 INT,12_31_2019 INT,1_31_2020 INT,2_29_2020 INT,3_31_2020 INT,4_30_2020 INT,5_31_2020 INT,6_30_2020 INT,7_31_2020 INT,8_31_2020 INT,9_30_2020 INT,10_31_2020 INT,11_30_2020 INT,12_31_2020 INT,1_31_2021 INT,2_28_2021 INT
+#         )
+#     '''
+
+#     curs.execute(create_str)
+
+#     with open("zillow_by_state.csv", "r") as csvfile:
+#         csvreader = csv.reader(csvfile)
+#         next(csvreader)
+#         insert_str = '''
+#             INSERT INTO Zillow_Complete
+#             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+#                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+#                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+#                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+#                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+#                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+#                 )
+#             '''
+
+#         for row in csvreader:
+#             curs.execute(insert_str, (
+#                 # row[0], #State
+#                 # row[1], #Median Home Value
+#                 row[0:]
+#             ))
+
+#     conn.commit()
+
 
 def create_census_table():
     conn = sqlite3.connect("project.db")
@@ -317,16 +426,18 @@ def create_census_table():
     curs.execute("DROP TABLE IF EXISTS Census;")
     curs.execute("CREATE TABLE IF NOT EXISTS Census (State TEXT PRIMARY KEY, Bachelor_Degrees INT);")
 
-    reader = csv.reader(open('census.csv', 'r'), delimiter=',')
-    insert_str = '''
-        INSERT INTO Census
-        VALUES (?, ?)
-    '''
-    for row in reader:
-        curs.execute(insert_str, (
-            row[0], #State
-            row[1], #Bachelor Degrees
-        ))
+    with open("census.csv", "r") as csvfile:
+        csvreader = csv.reader(csvfile)
+        next(csvreader)
+        insert_str = '''
+            INSERT INTO Census
+            VALUES (?, ?)
+        '''
+        for row in csvreader:
+            curs.execute(insert_str, (
+                row[0], #State
+                row[1], #Bachelor Degrees
+            ))
 
     conn.commit()
 
@@ -347,22 +458,24 @@ def create_wikipedia_table():
             )
     '''
     curs.execute(create_str)
-    reader = csv.reader(open('wikipedia.csv', 'r'), delimiter=',')
-    insert_str = '''
-        INSERT INTO Wikipedia
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    '''
+    with open("wikipedia.csv", "r") as csvfile:
+        csvreader = csv.reader(csvfile)
+        next(csvreader)
+        insert_str = '''
+            INSERT INTO Wikipedia
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        '''
 
-    for row in reader:
-        curs.execute(insert_str, (
-            row[0], #State
-            row[1], #Per_Capita_Income
-            row[2], #Median_Household_Income
-            row[3], #Median_Family_Income
-            row[4], #Population
-            row[5], #Number_of_Households
-            row[6], #Number_of_Families
-        ))
+        for row in csvreader:
+            curs.execute(insert_str, (
+                row[0], #State
+                row[1], #Per_Capita_Income
+                row[2], #Median_Household_Income
+                row[3], #Median_Family_Income
+                row[4], #Population
+                row[5], #Number_of_Households
+                row[6], #Number_of_Families
+            ))
 
     conn.commit()
 
@@ -374,32 +487,28 @@ def create_wikipedia_table():
 
 if __name__ == "__main__":
 
-
-
-    #Calling Zillow Data
+    #Calling Zillow functions
     zillow_data = build_zillow_dictionary('zillow_by_state.csv')
-    #print(zillow_data)
-    zillow_csv = convert_zillow_to_CSV(zillow_data)
+    convert_zillow_to_CSV(zillow_data)
+    zillow_complete = build_zillow_complete_dict('zillow_by_state.csv')
+    convert_zillow_complete_to_csv(zillow_complete)
 
-    #Calling Census API
+    #Calling Census functions
     census_data = get_census_data('https://api.census.gov/data/2019/acs/acs5?get=NAME,B15003_022E&for=state:*&key=3d095bab381ec8a891e05c0fe05da954f2710317')
-    #print(census_data)
     census_data_parsed = parse_census_data(census_data=census_data)
-    #print(census_data_parsed)
-    census_csv = convert_census_to_csv(census_data_parsed)
-    #print(census_csv)
+    convert_census_to_csv(census_data_parsed)
 
+    #Calling Wikipedia functions
     wikipedia_data = build_wikipedia_dictionary()
-    #print(wikipedia_data)
     wikipedia_data_cleaned = clean_wikipedia_dictionary(wikipedia_data)
-    #print(wikipedia_data_cleaned)
-    wikipedia_csv = convert_wikipedia_to_csv(wikipedia_data_cleaned)
+    convert_wikipedia_to_csv(wikipedia_data_cleaned)
 
-    #SQLite
-    #create_connection('project.db')
-    zill = create_zillow_table()
-    cens = create_census_table()
-    wiki = create_wikipedia_table()
+    #Calling SQLite functions
+    create_connection('project.db')
+    create_zillow_table()
+    #create_z2_table()
+    create_census_table()
+    create_wikipedia_table()
 
 
 
