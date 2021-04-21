@@ -4,4 +4,5 @@ zillow_by_state.csv
 documents
 scratch.py
 zillow_completed.csv
-__pychache__/
+__pycache__/
+scatter.html

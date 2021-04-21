@@ -6,8 +6,14 @@
 from requests_oauthlib import OAuth1
 from bs4 import BeautifulSoup
 import requests, json, csv, time, operator
-import sqlite3, logging, sys, os
+import sqlite3, os
+# import logging, sys
+import plotly.graph_objects as go
 from sqlite3 import Error
+
+### Other files
+import database_functions #All Database connectivity and table creations
+import interactive_elements #Longer print statements for the interactive terminal
 
 ### Caching
 CACHE_FILENAME = 'cache_census.json'
@@ -74,20 +80,24 @@ def build_zillow_dictionary(csv_file):
     -------
     Dictionary of a key: value pairing of state: median home price
     '''
-
+    # file_directory = os.path.dirname('CSV_Files')
+    # relative_path = csv_file
+    # absolute_file_path = os.path.join(file_directory, relative_path)
     with open(csv_file, 'r') as file:
         reader = csv.reader(file)
         zillow_states = {}
         for row in reader: #every row in reader contains a state and the median home price values by month
-            state_name = row[2]
+            state_name = row[2].lower()
             recent_month = row[-1]
 
             #add data to dictionary
             if state_name not in zillow_states:
                 zillow_states[state_name] = recent_month
 
-        del zillow_states['RegionName']
+        # del zillow_states['RegionName'] #uppercase
+        del zillow_states['regionname'] #lowercase
 
+    #print(zillow_states)
     return zillow_states
 
 def convert_zillow_to_CSV(zillow_dict):
@@ -115,7 +125,7 @@ def build_zillow_complete_dict(csv_file):
         zillow_states = {}
         for row in reader: #every row in reader contains a state and the median home price values by month
             # size_rank = row[1]
-            state_name = row[2]
+            state_name = row[2].lower()
             # region_type = row[3]
             # state_abbrev = row[4]
             all_months = list(row[5:])
@@ -124,7 +134,8 @@ def build_zillow_complete_dict(csv_file):
             if state_name not in zillow_states:
                 zillow_states[state_name] = all_months
 
-        del zillow_states['RegionName']
+        # del zillow_states['RegionName'] #uppercase
+        del zillow_states['regionname'] #lowercase
 
     return zillow_states
 
@@ -212,10 +223,13 @@ def parse_census_data(census_data):
     state_bach_dict = {}
 
     for individual_list in census_data:
-        state_bach_dict[individual_list[0]] = individual_list[1]
+        state_lower = individual_list[0].lower()
+        state_bach_dict[state_lower] = individual_list[1]
 
-    del state_bach_dict['NAME']
-    del state_bach_dict['Puerto Rico']
+    # del state_bach_dict['NAME']
+    # del state_bach_dict['Puerto Rico']
+    del state_bach_dict['name']
+    del state_bach_dict['puerto rico']
 
     return state_bach_dict
 
@@ -289,17 +303,26 @@ def build_wikipedia_dictionary():
     # headings = rows[0]
     #print(headings)
     for item in rows[1:]:
-        # wiki_dictionary[item[1]] = item[2]
-        wiki_dictionary[item[1]] = [item[2], item[3], item[4], item[5], item[6], item[7]]
+        state_name = item[1].lower()
+        wiki_dictionary[state_name] = [item[2], item[3], item[4], item[5], item[6], item[7]]
 
-    # Drop U.S. and territories
-    del wiki_dictionary['United States']
-    del wiki_dictionary['American Samoa']
-    del wiki_dictionary['Northern Mariana Islands']
-    del wiki_dictionary['Puerto Rico']
-    del wiki_dictionary['Guam']
-    del wiki_dictionary['U.S. Virgin Islands']
+    # # Drop U.S. and territories uppercase
+    # del wiki_dictionary['United States']
+    # del wiki_dictionary['American Samoa']
+    # del wiki_dictionary['Northern Mariana Islands']
+    # del wiki_dictionary['Puerto Rico']
+    # del wiki_dictionary['Guam']
+    # del wiki_dictionary['U.S. Virgin Islands']
 
+    # Drop U.S. and territories lowercase
+    del wiki_dictionary['united states']
+    del wiki_dictionary['american samoa']
+    del wiki_dictionary['northern mariana islands']
+    del wiki_dictionary['puerto rico']
+    del wiki_dictionary['guam']
+    del wiki_dictionary['u.s. virgin islands']
+
+    #print(wiki_dictionary)
     return wiki_dictionary
 
 def clean_wikipedia_dictionary(wiki_dict):
@@ -346,141 +369,25 @@ def convert_wikipedia_to_csv(wiki_dict):
         csvwriter.writerow(fields) # writing the fields
         csvwriter.writerows(rows)  # writing the data rows
 
-### SQLite3 / Database
-def create_connection(db_file):
-    """ create a database connection to a SQLite database """
-    conn = None
-    try:
-        conn = sqlite3.connect(db_file)
-        print(sqlite3.version)
-    except Error as e:
-        print(e)
-    finally:
-        if conn:
-            conn.close()
+### DB/SQLite3
+'''
+Functions are stored in database_functions.py
+'''
 
-def create_zillow_table():
-    conn = sqlite3.connect("project.db")
-    curs = conn.cursor()
-    curs.execute("DROP TABLE IF EXISTS Zillow;")
-    curs.execute("CREATE TABLE IF NOT EXISTS Zillow (State TEXT PRIMARY KEY, Median_Home_Value INT);")
+### Plotly
+def Scatterplot(variables, x_values, y_values):
+    scatter_data = go.Scatter(
+        x=x_values,
+        y=y_values,
+        text=variables,
+        marker={'symbol':'square', 'size':30, 'color': 'green'},
+        mode='markers+text',
+        textposition="top center",
+    )
 
-    with open("zillow.csv", "r") as csvfile:
-        csvreader = csv.reader(csvfile)
-        next(csvreader)
-        insert_str = '''
-            INSERT INTO Zillow
-            VALUES (?, ?)
-        '''
-
-        for row in csvreader:
-            curs.execute(insert_str, (
-                row[0], #State
-                row[1], #Median Home Value
-            ))
-
-    conn.commit()
-
-# def create_z2_table():
-#     conn = sqlite3.connect("project.db")
-#     curs = conn.cursor()
-#     curs.execute("DROP TABLE IF EXISTS Zillow_Complete;")
-
-#     create_str = '''
-#         CREATE TABLE IF NOT EXISTS Zillow_Complete (
-#             State TEXT PRIMARY KEY,
-#             1_31_1996 INT,2_29_1996 INT,3_31_1996 INT,4_30_1996 INT,5_31_1996 INT,6_30_1996 INT,7_31_1996 INT,8_31_1996 INT,9_30_1996 INT,10_31_1996 INT,11_30_1996 INT,12_31_1996 INT,1_31_1997 INT,2_28_1997 INT,3_31_1997 INT,4_30_1997 INT,
-#             5_31_1997 INT,6_30_1997 INT,7_31_1997 INT,8_31_1997 INT,9_30_1997 INT,10_31_1997 INT,11_30_1997 INT,12_31_1997 INT,1_31_1998 INT,2_28_1998 INT,3_31_1998 INT,4_30_1998 INT,5_31_1998 INT,6_30_1998 INT,7_31_1998 INT,8_31_1998 INT,9_30_1998 INT,10_31_1998 INT,11_30_1998 INT,12_31_1998 INT,1_31_1999 INT,2_28_1999 INT,3_31_1999 INT,4_30_1999 INT,5_31_1999 INT,6_30_1999 INT,7_31_1999 INT,8_31_1999 INT,9_30_1999 INT,10_31_1999 INT,11_30_1999 INT,12_31_1999 INT,1_31_2000 INT,2_29_2000 INT,3_31_2000 INT,4_30_2000 INT,5_31_2000 INT,6_30_2000 INT,7_31_2000 INT,8_31_2000 INT,9_30_2000 INT,10_31_2000 INT,11_30_2000 INT,12_31_2000 INT,1_31_2001 INT,2_28_2001 INT,3_31_2001 INT,4_30_2001 INT,5_31_2001 INT,6_30_2001 INT,7_31_2001 INT,8_31_2001 INT,9_30_2001 INT,10_31_2001 INT,11_30_2001 INT,12_31_2001 INT,1_31_2002 INT,2_28_2002 INT,3_31_2002 INT,4_30_2002 INT,5_31_2002 INT,6_30_2002 INT,7_31_2002 INT,8_31_2002 INT,9_30_2002 INT,10_31_2002 INT,11_30_2002 INT,12_31_2002 INT,1_31_2003 INT,2_28_2003 INT,3_31_2003 INT,4_30_2003 INT,5_31_2003 INT,6_30_2003 INT,7_31_2003 INT,8_31_2003 INT,9_30_2003 INT,10_31_2003 INT,11_30_2003 INT,12_31_2003 INT,1_31_2004 INT,2_29_2004 INT,3_31_2004 INT,4_30_2004 INT,5_31_2004 INT,6_30_2004 INT,7_31_2004 INT,8_31_2004 INT,9_30_2004 INT,10_31_2004 INT,11_30_2004 INT,12_31_2004 INT,1_31_2005 INT,2_28_2005 INT,3_31_2005 INT,4_30_2005 INT,5_31_2005 INT,6_30_2005 INT,7_31_2005 INT,8_31_2005 INT,9_30_2005 INT,10_31_2005 INT,11_30_2005 INT,12_31_2005 INT,1_31_2006 INT,2_28_2006 INT,3_31_2006 INT,4_30_2006 INT,5_31_2006 INT,6_30_2006 INT,7_31_2006 INT,8_31_2006 INT,9_30_2006 INT,10_31_2006 INT,11_30_2006 INT,12_31_2006 INT,1_31_2007 INT,2_28_2007 INT,3_31_2007 INT,4_30_2007 INT,5_31_2007 INT,6_30_2007 INT,7_31_2007 INT,8_31_2007 INT,9_30_2007 INT,10_31_2007 INT,11_30_2007 INT,12_31_2007 INT,1_31_2008 INT,2_29_2008 INT,3_31_2008 INT,4_30_2008 INT,5_31_2008 INT,6_30_2008 INT,7_31_2008 INT,8_31_2008 INT,9_30_2008 INT,10_31_2008 INT,11_30_2008 INT,12_31_2008 INT,1_31_2009 INT,2_28_2009 INT,3_31_2009 INT,4_30_2009 INT,5_31_2009 INT,6_30_2009 INT,7_31_2009 INT,8_31_2009 INT,9_30_2009 INT,10_31_2009 INT,11_30_2009 INT,12_31_2009 INT,1_31_2010 INT,2_28_2010 INT,3_31_2010 INT,4_30_2010 INT,5_31_2010 INT,6_30_2010 INT,7_31_2010 INT,8_31_2010 INT,9_30_2010 INT,10_31_2010 INT,11_30_2010 INT,12_31_2010 INT,1_31_2011 INT,2_28_2011 INT,3_31_2011 INT,4_30_2011 INT,5_31_2011 INT,6_30_2011 INT,7_31_2011 INT,8_31_2011 INT,9_30_2011 INT,10_31_2011 INT,11_30_2011 INT,12_31_2011 INT,1_31_2012 INT,2_29_2012 INT,3_31_2012 INT,4_30_2012 INT,5_31_2012 INT,6_30_2012 INT,7_31_2012 INT,8_31_2012 INT,        9_30_2012 INT,10_31_2012 INT,11_30_2012 INT,12_31_2012 INT,1_31_2013 INT,2_28_2013 INT,3_31_2013 INT,4_30_2013 INT,5_31_2013 INT,6_30_2013 INT,7_31_2013 INT,8_31_2013 INT,9_30_2013 INT,10_31_2013 INT,11_30_2013 INT,12_31_2013 INT,1_31_2014 INT,2_28_2014 INT,3_31_2014 INT,4_30_2014 INT,5_31_2014 INT,6_30_2014 INT,7_31_2014 INT,8_31_2014 INT,9_30_2014 INT,10_31_2014 INT,11_30_2014 INT,12_31_2014 INT,1_31_2015 INT,2_28_2015 INT,3_31_2015 INT,4_30_2015 INT,5_31_2015 INT,6_30_2015 INT,7_31_2015 INT,8_31_2015 INT,9_30_2015 INT,10_31_2015 INT,11_30_2015 INT,12_31_2015 INT,1_31_2016 INT,2_29_2016 INT,3_31_2016 INT,4_30_2016 INT,5_31_2016 INT,6_30_2016 INT,7_31_2016 INT,8_31_2016 INT,9_30_2016 INT,10_31_2016 INT,11_30_2016 INT,12_31_2016 INT,1_31_2017 INT,2_28_2017 INT,3_31_2017 INT,4_30_2017 INT,5_31_2017 INT,6_30_2017 INT,7_31_2017 INT,8_31_2017 INT,9_30_2017 INT,10_31_2017 INT,11_30_2017 INT,12_31_2017 INT,1_31_2018 INT,2_28_2018 INT,3_31_2018 INT,4_30_2018 INT,5_31_2018 INT,6_30_2018 INT,7_31_2018 INT,8_31_2018 INT,9_30_2018 INT,10_31_2018 INT,11_30_2018 INT,12_31_2018 INT,1_31_2019 INT,2_28_2019 INT,3_31_2019 INT,4_30_2019 INT,5_31_2019 INT,6_30_2019 INT,7_31_2019 INT,8_31_2019 INT,9_30_2019 INT,10_31_2019 INT,11_30_2019 INT,12_31_2019 INT,1_31_2020 INT,2_29_2020 INT,3_31_2020 INT,4_30_2020 INT,5_31_2020 INT,6_30_2020 INT,7_31_2020 INT,8_31_2020 INT,9_30_2020 INT,10_31_2020 INT,11_30_2020 INT,12_31_2020 INT,1_31_2021 INT,2_28_2021 INT
-#         )
-#     '''
-
-#     curs.execute(create_str)
-
-#     with open("zillow_by_state.csv", "r") as csvfile:
-#         csvreader = csv.reader(csvfile)
-#         next(csvreader)
-#         insert_str = '''
-#             INSERT INTO Zillow_Complete
-#             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-#                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-#                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-#                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-#                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-#                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-#                 )
-#             '''
-
-#         for row in csvreader:
-#             curs.execute(insert_str, (
-#                 # row[0], #State
-#                 # row[1], #Median Home Value
-#                 row[0:]
-#             ))
-
-#     conn.commit()
-
-
-def create_census_table():
-    conn = sqlite3.connect("project.db")
-    curs = conn.cursor()
-    curs.execute("DROP TABLE IF EXISTS Census;")
-    curs.execute("CREATE TABLE IF NOT EXISTS Census (State TEXT PRIMARY KEY, Bachelor_Degrees INT);")
-
-    with open("census.csv", "r") as csvfile:
-        csvreader = csv.reader(csvfile)
-        next(csvreader)
-        insert_str = '''
-            INSERT INTO Census
-            VALUES (?, ?)
-        '''
-        for row in csvreader:
-            curs.execute(insert_str, (
-                row[0], #State
-                row[1], #Bachelor Degrees
-            ))
-
-    conn.commit()
-
-def create_wikipedia_table():
-    conn = sqlite3.connect("project.db")
-    curs = conn.cursor()
-    curs.execute("DROP TABLE IF EXISTS Wikipedia;")
-
-    create_str = '''
-        CREATE TABLE IF NOT EXISTS Wikipedia (
-            State TEXT PRIMARY KEY,
-            Per_Capita_Income INT,
-            Median_Household_Income INT,
-            Median_Family_Income INT,
-            Population INT,
-            Number_of_Households INT,
-            Number_of_Families INT
-            )
-    '''
-    curs.execute(create_str)
-    with open("wikipedia.csv", "r") as csvfile:
-        csvreader = csv.reader(csvfile)
-        next(csvreader)
-        insert_str = '''
-            INSERT INTO Wikipedia
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        '''
-
-        for row in csvreader:
-            curs.execute(insert_str, (
-                row[0], #State
-                row[1], #Per_Capita_Income
-                row[2], #Median_Household_Income
-                row[3], #Median_Family_Income
-                row[4], #Population
-                row[5], #Number_of_Households
-                row[6], #Number_of_Families
-            ))
-
-    conn.commit()
-
-
-
+    basic_layout = go.Layout(title=f"{x_values} versus {y_values}")
+    fig = go.Figure(data=scatter_data, layout=basic_layout)
+    fig.write_html("scatter.html", auto_open=True)
 
 
 
@@ -496,21 +403,78 @@ if __name__ == "__main__":
     #Calling Census functions
     census_data = get_census_data('https://api.census.gov/data/2019/acs/acs5?get=NAME,B15003_022E&for=state:*&key=3d095bab381ec8a891e05c0fe05da954f2710317')
     census_data_parsed = parse_census_data(census_data=census_data)
+    #print(census_data_parsed)
     convert_census_to_csv(census_data_parsed)
 
     #Calling Wikipedia functions
     wikipedia_data = build_wikipedia_dictionary()
     wikipedia_data_cleaned = clean_wikipedia_dictionary(wikipedia_data)
+    #print(wikipedia_data_cleaned['north dakota'])
     convert_wikipedia_to_csv(wikipedia_data_cleaned)
 
     #Calling SQLite functions
-    create_connection('project.db')
-    create_zillow_table()
-    #create_z2_table()
-    create_census_table()
-    create_wikipedia_table()
+    database_functions.create_connection('project.db')
+    database_functions.create_zillow_table()
+    # database_functions.create_z2_table()
+    database_functions.create_census_table()
+    database_functions.create_wikipedia_table()
 
+    # #Plotly
+    # cities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix']
+    # population = [ 8398748, 3990456, 2705994, 2325502, 1660272]
+    # area = [301.5, 468.7, 227.3, 637.5, 517.6]
+    # _ = Scatterplot(variables=cities, x_values=area, y_values=population)
 
+    #Testing the Search by State functions
+    #list_zillow_details(state='Michigan', zillow_data=zillow_data)
+    #list_wikipedia_details(state='Michigan', wikipedia_data=wikipedia_data_cleaned)
+    #list_census_details(state='Michigan', census_data=census_data_parsed)
+    #list_all_details(state='Michigan', zillow_data=zillow_data, wikipedia_data=wikipedia_data_cleaned, census_data=census_data_parsed)
+
+    #Interactive Console
+    # interactive_elements.opening_statement()
+
+    while True:
+
+        #Provide initial options
+        interactive_elements.provide_initial_options()
+        entry = input(f"\nType a number (e.g. '1', '2') or 'exit': ")
+        user_input = entry.lower().strip()
+
+        #Option: Exit
+        if user_input == 'exit':
+            print(f'\nBye!')
+            quit()
+
+        #Option #1
+        elif user_input == '1':
+            break
+
+        #Option #2
+        elif user_input == '2':
+            break
+
+        #Option #3: Search a State
+        elif user_input == '3':
+            while True:
+                state_search = input(f'\nEnter a state name (e.g. Michigan, michigan) or "exit" or "back": ')
+                string_accomodation = state_search.lower().strip()
+
+                if string_accomodation == 'exit':
+                    print(f'\nBye!')
+                    quit()
+
+                elif string_accomodation == 'back':
+                    break
+
+                elif string_accomodation in zillow_data.keys(): #any dictionary will do
+                    interactive_elements.list_all_details(state=state_search)
+
+                else:
+                    print(f'\nError: Type a state for a detailed search or "exit" or "back": ')
+
+        else:
+            print(f"\n[Error] Please type the number of the path you want to pursue. ")
 
 
 
