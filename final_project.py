@@ -389,6 +389,65 @@ def Scatterplot(variables, x_values, y_values):
     fig = go.Figure(data=scatter_data, layout=basic_layout)
     fig.write_html("scatter.html", auto_open=True)
 
+### Interactive Elements
+def list_all_states_above_budget(budget_input):
+    zillow_data = build_zillow_dictionary('zillow_by_state.csv')
+    zillow_list = [zillow_data]
+    new_zillow_dict = [dict([a, int(x)] for a, x in b.items()) for b in zillow_list][0]
+
+    #Confirm budget is above lowest value
+    minimum_value = min(new_zillow_dict, key=lambda k: new_zillow_dict[k])
+
+    if budget_input >= new_zillow_dict[minimum_value]:
+        affordable_dict = {}
+        for key, val in new_zillow_dict.items():
+            if budget_input >= val:
+                affordable_dict[key] = val
+
+        sorted_values = sorted(affordable_dict.values())
+        sorted_dict = {}
+        for i in sorted_values:
+            for key in affordable_dict.keys():
+                if affordable_dict[key] == i:
+                    sorted_dict[key] = affordable_dict[key]
+                    break
+
+        print('=' * 30)
+        print(f"You entered: {budget_input}")
+        amount = len(sorted_dict.keys())
+        print(f"You can afford to live in {amount} states. ")
+        print(f"\nThe states and their median home values are as follows (sorted by affordability):")
+        print('-' * 30)
+        for key, val in sorted_dict.items():
+            capped_key = key.capitalize()
+            print(f"{capped_key}: {val}")
+
+    else:
+        print('=' * 30)
+        print(f"You entered: {budget_input}, but there are no states under that budget. ")
+        budget_state, budget = min(new_zillow_dict.items(), key=lambda x: abs(budget_input - x[1]))
+        print(f"The closest state is {budget_state.capitalize()} with a median home value of {budget}. ")
+
+def incomeComparer(income_input):
+    '''
+    '''
+    print('=' * 30)
+    print(f"You entered: {income_input}")
+    wikipedia_data = build_wikipedia_dictionary()
+    wikipedia_data_cleaned = clean_wikipedia_dictionary(wikipedia_data)
+    # wikipedia_list = [wikipedia_data_cleaned]
+    # print(wikipedia_list)
+
+    new_wikipedia_dict = {}
+    for key, value_list in wikipedia_data_cleaned.items():
+        new_value_list = []
+        for value in value_list:
+            new_value = int(value)
+            new_value_list.append(new_value)
+        new_wikipedia_dict[key] = new_value_list[0] #Only income per capita
+
+    state, income = min(new_wikipedia_dict.items(), key=lambda x: abs(income_input - x[1]))
+    print(state.capitalize(), income)
 
 
 
@@ -430,6 +489,12 @@ if __name__ == "__main__":
     #list_wikipedia_details(state='Michigan', wikipedia_data=wikipedia_data_cleaned)
     #list_census_details(state='Michigan', census_data=census_data_parsed)
     #list_all_details(state='Michigan', zillow_data=zillow_data, wikipedia_data=wikipedia_data_cleaned, census_data=census_data_parsed)
+    #find_state_with_closest_budget(100000)
+    #list_all_states_above_budget(100000)
+    #incomeComparer(35000)
+    # string_list = list(zillow_data.values())
+    # int_list = list(map(int, string_list))
+    # takeClosest(100000, int_list)
 
     #Interactive Console
     # interactive_elements.opening_statement()
@@ -446,9 +511,69 @@ if __name__ == "__main__":
             print(f'\nBye!')
             quit()
 
-        #Option #1
+        #Option #1: Compare personal finances across states
         elif user_input == '1':
-            break
+            while True:
+                print(f"\nWould you like to:")
+                print('-' * 30)
+                print(f"(a) Enter a budget for a home")
+                print(f"(b) Compare your income across state averages")
+                print('-' * 30)
+                selection = input(f"Enter a letter (e.g. 'a' or 'b') or type 'exit' or 'back': ")
+                string_accomodation = selection.lower().strip()
+
+                if string_accomodation == 'exit':
+                    print(f'\nBye!')
+                    quit()
+
+                elif string_accomodation == 'back':
+                    break
+
+                elif string_accomodation == 'a':
+                    while True: #Complete
+                        budget_entry = input(f"\nEnter a budget (without commas or a dollar sign) or type 'exit' or 'back': ")
+
+                        if budget_entry == 'exit':
+                            print(f'\nBye!')
+                            quit()
+
+                        elif budget_entry == 'back':
+                            break
+
+                        elif budget_entry.isnumeric():
+                            list_all_states_above_budget(int(budget_entry))
+
+                        else:
+                            print(f"\n ")
+                            print('=' * 62)
+                            print(f"[Error] Enter a budget (without commas or a dollar sign) or type 'exit' or 'back': ")
+                            print('=' * 62)
+
+                elif string_accomodation == 'b':
+                    while True: #Complete
+                        income_entry = input(f"\nEnter an income (without commas or a dollar sign) or type 'exit' or 'back': ")
+
+                        if income_entry == 'exit':
+                            print(f'\nBye!')
+                            quit()
+
+                        elif income_entry == 'back':
+                            break
+
+                        elif income_entry.isnumeric():
+                            incomeComparer(int(income_entry))
+
+                        else:
+                            print(f"\n ")
+                            print('=' * 62)
+                            print(f"[Error] Enter an income (without commas or a dollar sign) or type 'exit' or 'back': ")
+                            print('=' * 62)
+
+                else:
+                    print(f"\n ")
+                    print('=' * 62)
+                    print(f"Error: Enter a letter (e.g. 'a' or 'b') or type 'exit' or 'back': ")
+                    print('=' * 62)
 
         #Option #2
         elif user_input == '2':
@@ -456,7 +581,7 @@ if __name__ == "__main__":
 
         #Option #3: Search a State
         elif user_input == '3':
-            while True:
+            while True: #Complete
                 state_search = input(f'\nEnter a state name (e.g. Michigan, michigan) or "exit" or "back": ')
                 string_accomodation = state_search.lower().strip()
 
@@ -471,10 +596,13 @@ if __name__ == "__main__":
                     interactive_elements.list_all_details(state=state_search)
 
                 else:
-                    print(f'\nError: Type a state for a detailed search or "exit" or "back": ')
+                    print(f'\n[Error] Type a state for a detailed search or "exit" or "back": ')
 
         else:
-            print(f"\n[Error] Please type the number of the path you want to pursue. ")
+            print(f"\n ")
+            print('=' * 62)
+            print(f"[Error] Please type the number of the path you want to pursue. ")
+            print('=' * 62)
 
 
 
