@@ -1,0 +1,12 @@
+<!doctype html>
+<!-- <title>Simple tables</title> -->
+<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+<div class=page>
+  <h1>Data Table</h1>
+        <a href="https://github.com/ccmilne/507FinalProject">See the github repo for more details</a>
+    <h2>The data from each data source (Zillow, Census API, Wikipedia) merged on State</h2>
+  {% for table in tables %}
+    <h2>{{titles[loop.index]}}</h2>
+    {{ table|safe }}
+  {% endfor %}
+</div>

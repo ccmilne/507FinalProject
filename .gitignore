@@ -6,3 +6,5 @@ scratch.py
 zillow_completed.csv
 __pycache__/
 scatter.html
+templates/index.html
+views2.py

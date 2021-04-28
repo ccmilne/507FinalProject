@@ -6,6 +6,12 @@ The data sources used:
 - U.S. [Census API](https://api.census.gov/data/2019/acs/acs5?get=NAME,B15003_022E&for=state:*&key=3d095bab381ec8a891e05c0fe05da954f2710317)
 - Wikipedia's [List of States and Territories by Income](https://en.wikipedia.org/wiki/List_of_U.S._states_and_territories_by_income )
 
+***Required Packages***
+- Flask
+- SQLite3
+- Beautiful Soup
+- Plotly
+
 The project offers users several ways of interacting with the data. 
 The first is an interactive console that provides three paths and the second is a Flask web browser display. 
 

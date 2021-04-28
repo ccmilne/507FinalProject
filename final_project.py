@@ -3,7 +3,6 @@
 ##### Uniqname: ccmilne
 #################################
 
-from requests_oauthlib import OAuth1
 from bs4 import BeautifulSoup
 import requests, json, csv, time, operator
 import sqlite3, os
@@ -21,7 +20,6 @@ CACHE_DICT = {}
 UNIQUE_CACHE_KEY = 'usual'
 CENSUS_API_KEY = '3d095bab381ec8a891e05c0fe05da954f2710317'
 CENSUS_BASEURL = 'https://api.census.gov/data/timeseries/pseo/earnings'
-
 
 ### Caching
 def open_cache():
@@ -376,8 +374,6 @@ Functions are stored in viz_functions.py
 Functions are stored in interactive_elements.py
 '''
 
-
-
 if __name__ == "__main__":
 
     #Calling Zillow functions
@@ -550,8 +546,3 @@ if __name__ == "__main__":
             print('=' * 62)
             print(f"[Error] Please type the number of the path you want to pursue. ")
             print('=' * 62)
-
-
-
-
-
