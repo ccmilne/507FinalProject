@@ -27,4 +27,5 @@ The resulting scatterplot will include all fifty states and the District of Colu
 The final search element allows a user to explore the above variables at a state level where all of the data is printed for them. 
 
 ***Flask***
- # TODO
+
+Using Flask's web browser framework, this project also displays the data sourced and used in HTML formats. 
