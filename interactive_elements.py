@@ -6,6 +6,7 @@ import requests, json, csv, time, operator
 ### Initial Chunks
 def opening_statement():
     '''
+    Prints the opening statement for the Interactive Console in final_project.py
     '''
     import final_project
     print(f"\nThis program explores data related to home values, bachelor degree statistics, and family finance. Here are some of the variables you can explore by state: ")
@@ -23,6 +24,7 @@ def opening_statement():
 
 def provide_initial_options():
     '''
+    Prints initial option paths for the user in final_project.py
     '''
     import final_project
     print(f'\nOptions:')
@@ -31,8 +33,19 @@ def provide_initial_options():
     print(f"3. Search by State")
 
 ### Compare Personal Finance Functions
-def list_all_states_above_budget(budget_input):
-    '''
+def list_all_states_under_budget(budget_input):
+    '''Lists all states under input value
+
+    Takes an input value and returns all of the states and their median home values
+    that are under the input value.
+
+    Parameters:
+    ----------
+    budget_input: integer (e.g. 400000)
+
+    Returns:
+    -------
+    printed list of state, median home values
     '''
     import final_project
     zillow_data = final_project.build_zillow_dictionary('zillow_by_state.csv')
@@ -73,7 +86,18 @@ def list_all_states_above_budget(budget_input):
         print(f"The closest state is {budget_state.capitalize()} with a median home value of {budget}. ")
 
 def incomeComparer(income_input):
-    '''
+    '''Lists all states under input value
+
+    Takes an input value for income and returns all of the states and their
+    income per capita values that are under the input value.
+
+    Parameters:
+    ----------
+    income_input: integer (e.g. 40000)
+
+    Returns:
+    -------
+    printed list of state, income per capita
     '''
     import final_project
     print('=' * 30)
@@ -96,7 +120,18 @@ def incomeComparer(income_input):
 
 ### State Search Functions
 def list_zillow_details(state, zillow_data):
-    '''
+    '''Lists State and corresponding median home value
+
+    Takes a state and lists the state and its median home value.
+
+    Parameters:
+    ----------
+    state: string
+    zillow_data: dictionary from build_zillow_dictionary()
+
+    Returns:
+    -------
+    printed list of state, median home values
     '''
     import final_project
     state_entry = state.strip().lower()
@@ -111,7 +146,19 @@ def list_zillow_details(state, zillow_data):
         print(f"{key}: {val}")
 
 def list_wikipedia_details(state, wikipedia_data):
-    '''
+    '''Lists State and corresponding Wikipedia values
+
+    Takes a state and prints a list of the state and the values in
+    the wikipedia dictionary.
+
+    Parameters:
+    ----------
+    state: string
+    wikipedia_data: dictionary from build_wikipedia_dictionary()
+
+    Returns:
+    -------
+    printed list of state, values
     '''
     import final_project
     state_entry = state.strip().lower()
@@ -132,7 +179,18 @@ def list_wikipedia_details(state, wikipedia_data):
         print(f"{key}: {val}")
 
 def list_census_details(state, census_data):
-    '''
+    '''Lists State and corresponding bachelor degrees value
+
+    Takes a state and lists the state and the number of bachelor degrees.
+
+    Parameters:
+    ----------
+    state: string
+    census_data: dictionary
+
+    Returns:
+    -------
+    printed list of state, bachelor degrees values
     '''
     import final_project
     state_entry = state.strip().lower()
@@ -147,7 +205,18 @@ def list_census_details(state, census_data):
         print(f"{key}: {val}")
 
 def list_all_details(state):
-    '''
+    '''Lists the sources and their values for a state
+
+    Takes a state and calls on three functions to print the values
+    for each state from each source.
+
+    Parameters:
+    ----------
+    state: string
+
+    Returns:
+    -------
+    printed list of each source, the state, and associated list of values
     '''
     import final_project
 

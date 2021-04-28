@@ -7,7 +7,6 @@ from requests_oauthlib import OAuth1
 from bs4 import BeautifulSoup
 import requests, json, csv, time, operator
 import sqlite3, os
-# import logging, sys
 import plotly.graph_objects as go
 from sqlite3 import Error
 
@@ -446,7 +445,7 @@ if __name__ == "__main__":
                             break
 
                         elif budget_entry.isnumeric():
-                            interactive_elements.list_all_states_above_budget(int(budget_entry))
+                            interactive_elements.list_all_states_under_budget(int(budget_entry))
 
                         else:
                             print(f"\n ")

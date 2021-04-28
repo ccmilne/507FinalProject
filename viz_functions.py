@@ -4,15 +4,34 @@ import final_project
 
 ### Plotly
 def scrapeStateNames(dictionary):
-    '''
-    Used for Census and Zillow:
+    '''Scrapes State Names for Plotly Function in Interactive Console
+
+    This is used for Census and Zillow only.
+
+    Parameters
+    ----------
+    dictionary: key must be State
+
+    returns:
+    -------
+    list: dictionary keys sorted alphabetically.
     '''
     import final_project
     sorted_dict = sorted(dictionary)
     return sorted_dict
 
 def scrapeVariable(dictionary):
-    '''
+    '''Scrapes values for Plotly Function in Interactive Console
+
+    This is used for Census and Zillow only.
+
+    Parameters
+    ----------
+    dictionary: key must be State, value can be anything
+
+    returns:
+    -------
+    list: list of values sorted alphabetically by their corresponding dictionary key.
     '''
     import final_project
     newlist = []
@@ -22,7 +41,19 @@ def scrapeVariable(dictionary):
     return newlist
 
 def scrapeWikipediaVariables(dictionary, variable_position):
-    '''
+    '''Scrapes values from a list for each state
+
+    This function is seperate from Zillow and Census because
+    there is more than one value per Key in the dictionary.
+
+    Parameters:
+    ----------
+    dictionary: wikipedia_data_cleaned
+    variable_position: accomodates the users choice in the interactive console
+
+    Returns:
+    -------
+    list: the desired values for a select key.
     '''
     import final_project
     newlist = []
@@ -41,7 +72,18 @@ def scrapeWikipediaVariables(dictionary, variable_position):
     return desired_variables
 
 def identifyVariable(number_entry):
-    '''
+    '''Allows a user to select a value from the interactive console
+
+    Depending on which variable the user wants to identify, scrapeVariable or
+    scrapeWikipediaVariables is called to return the variable or list of variables
+
+    Parameters:
+    ----------
+    int: number entry
+
+    Returns:
+    -------
+    list: variable(s)
     '''
     import final_project
     zillow_data = final_project.build_zillow_dictionary('zillow_by_state.csv')
