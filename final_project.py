@@ -24,6 +24,7 @@ CENSUS_API_KEY = '3d095bab381ec8a891e05c0fe05da954f2710317'
 CENSUS_BASEURL = 'https://api.census.gov/data/timeseries/pseo/earnings'
 
 
+### Caching
 def open_cache():
     ''' Opens the cache file if it exists and loads the JSON into
     the CACHE_DICT dictionary.
@@ -63,8 +64,6 @@ def save_cache(cache_dict):
     fw.write(dumped_json_cache)
     fw.close()
 
-
-
 ### Zillow Data
 def build_zillow_dictionary(csv_file):
     '''Reads in CSV file from Zillow
@@ -102,7 +101,21 @@ def build_zillow_dictionary(csv_file):
     return zillow_states
 
 def convert_zillow_to_CSV(zillow_dict):
-    '''
+    '''Converts the Zillow Dictionary back into a CSV file
+
+    The CSV file used in the build_zillow_dictionary function converted the raw
+    data into a dictionary in order for data cleaning. Now, it's being converted
+    back to a CSV file in order for the data to be uploaded to the database.
+    The function iterates through the dictionary keys and appends each key, value
+    to a row in the csv file.
+
+    Parameters
+    ----------
+    zillow_dict: a specific zillow dictionary produced from build_zillow_dictionary()
+
+    returns:
+    --------
+    CSV file: 'zillow.csv'
     '''
     fields = ['State', 'Median Home Value']
     rows = []
@@ -118,76 +131,6 @@ def convert_zillow_to_CSV(zillow_dict):
         csvwriter = csv.writer(csvfile) # creating a csv writer object
         csvwriter.writerow(fields) # writing the fields
         csvwriter.writerows(rows)  # writing the data rows
-
-def build_zillow_complete_dict(csv_file):
-    ''' '''
-    with open(csv_file, 'r') as file:
-        reader = csv.reader(file)
-        zillow_states = {}
-        for row in reader: #every row in reader contains a state and the median home price values by month
-            # size_rank = row[1]
-            state_name = row[2].lower()
-            # region_type = row[3]
-            # state_abbrev = row[4]
-            all_months = list(row[5:])
-
-            #add data to dictionary
-            if state_name not in zillow_states:
-                zillow_states[state_name] = all_months
-
-        # del zillow_states['RegionName'] #uppercase
-        del zillow_states['regionname'] #lowercase
-
-    return zillow_states
-
-# def convert_zillow_complete_to_csv(zillow_complete_dict):
-#     '''
-#     '''
-#     fields = ['State',
-#         '1_31_1996', '2_29_1996', '3_31_1996', '4_30_1996', '5_31_1996', '6_30_1996', '7_31_1996', '8_31_1996', '9_30_1996', '10_31_1996', '11_30_1996', '12_31_1996',
-#         '1_31_1997', '2_28_1997', '3_31_1997', '4_30_1997', '5_31_1997', '6_30_1997', '7_31_1997', '8_31_1997', '9_30_1997', '10_31_1997', '11_30_1997', '12_31_1997',
-#         '1_31_1998', '2_28_1998', '3_31_1998', '4_30_1998', '5_31_1998', '6_30_1998', '7_31_1998', '8_31_1998', '9_30_1998', '10_31_1998', '11_30_1998', '12_31_1998',
-#         '1_31_1999', '2_28_1999', '3_31_1999', '4_30_1999', '5_31_1999', '6_30_1999', '7_31_1999', '8_31_1999', '9_30_1999', '10_31_1999', '11_30_1999', '12_31_1999',
-#         '1_31_2000', '2_29_2000', '3_31_2000', '4_30_2000', '5_31_2000', '6_30_2000', '7_31_2000', '8_31_2000', '9_30_2000', '10_31_2000', '11_30_2000', '12_31_2000',
-#         '1_31_2001', '2_28_2001', '3_31_2001', '4_30_2001', '5_31_2001', '6_30_2001', '7_31_2001', '8_31_2001', '9_30_2001', '10_31_2001', '11_30_2001', '12_31_2001', 
-#         '1_31_2002', '2_28_2002', '3_31_2002', '4_30_2002', '5_31_2002', '6_30_2002', '7_31_2002', '8_31_2002', '9_30_2002', '10_31_2002', '11_30_2002', '12_31_2002', 
-#         '1_31_2003', '2_28_2003', '3_31_2003', '4_30_2003', '5_31_2003', '6_30_2003', '7_31_2003', '8_31_2003', '9_30_2003', '10_31_2003', '11_30_2003', '12_31_2003', 
-#         '1_31_2004', '2_29_2004', '3_31_2004', '4_30_2004', '5_31_2004', '6_30_2004', '7_31_2004', '8_31_2004', '9_30_2004', '10_31_2004', '11_30_2004', '12_31_2004', 
-#         '1_31_2005', '2_28_2005', '3_31_2005', '4_30_2005', '5_31_2005', '6_30_2005', '7_31_2005', '8_31_2005', '9_30_2005', '10_31_2005', '11_30_2005', '12_31_2005', 
-#         '1_31_2006', '2_28_2006', '3_31_2006', '4_30_2006', '5_31_2006', '6_30_2006', '7_31_2006', '8_31_2006', '9_30_2006', '10_31_2006', '11_30_2006', '12_31_2006', 
-#         '1_31_2007', '2_28_2007', '3_31_2007', '4_30_2007', '5_31_2007', '6_30_2007', '7_31_2007', '8_31_2007', '9_30_2007', '10_31_2007', '11_30_2007', '12_31_2007', 
-#         '1_31_2008', '2_29_2008', '3_31_2008', '4_30_2008', '5_31_2008', '6_30_2008', '7_31_2008', '8_31_2008', '9_30_2008', '10_31_2008', '11_30_2008', '12_31_2008', 
-#         '1_31_2009', '2_28_2009', '3_31_2009', '4_30_2009', '5_31_2009', '6_30_2009', '7_31_2009', '8_31_2009', '9_30_2009', '10_31_2009', '11_30_2009', '12_31_2009', 
-#         '1_31_2010', '2_28_2010', '3_31_2010', '4_30_2010', '5_31_2010', '6_30_2010', '7_31_2010', '8_31_2010', '9_30_2010', '10_31_2010', '11_30_2010', '12_31_2010', 
-#         '1_31_2011', '2_28_2011', '3_31_2011', '4_30_2011', '5_31_2011', '6_30_2011', '7_31_2011', '8_31_2011', '9_30_2011', '10_31_2011', '11_30_2011', '12_31_2011', 
-#         '1_31_2012', '2_29_2012', '3_31_2012', '4_30_2012', '5_31_2012', '6_30_2012', '7_31_2012', '8_31_2012', '9_30_2012', '10_31_2012', '11_30_2012', '12_31_2012', 
-#         '1_31_2013', '2_28_2013', '3_31_2013', '4_30_2013', '5_31_2013', '6_30_2013', '7_31_2013', '8_31_2013', '9_30_2013', '10_31_2013', '11_30_2013', '12_31_2013', 
-#         '1_31_2014', '2_28_2014', '3_31_2014', '4_30_2014', '5_31_2014', '6_30_2014', '7_31_2014', '8_31_2014', '9_30_2014', '10_31_2014', '11_30_2014', '12_31_2014', 
-#         '1_31_2015', '2_28_2015', '3_31_2015', '4_30_2015', '5_31_2015', '6_30_2015', '7_31_2015', '8_31_2015', '9_30_2015', '10_31_2015', '11_30_2015', '12_31_2015', 
-#         '1_31_2016', '2_29_2016', '3_31_2016', '4_30_2016', '5_31_2016', '6_30_2016', '7_31_2016', '8_31_2016', '9_30_2016', '10_31_2016', '11_30_2016', '12_31_2016', 
-#         '1_31_2017', '2_28_2017', '3_31_2017', '4_30_2017', '5_31_2017', '6_30_2017', '7_31_2017', '8_31_2017', '9_30_2017', '10_31_2017', '11_30_2017', '12_31_2017', 
-#         '1_31_2018', '2_28_2018', '3_31_2018', '4_30_2018', '5_31_2018', '6_30_2018', '7_31_2018', '8_31_2018', '9_30_2018', '10_31_2018', '11_30_2018', '12_31_2018', 
-#         '1_31_2019', '2_28_2019', '3_31_2019', '4_30_2019', '5_31_2019', '6_30_2019', '7_31_2019', '8_31_2019', '9_30_2019', '10_31_2019', '11_30_2019', '12_31_2019', 
-#         '1_31_2020', '2_29_2020', '3_31_2020', '4_30_2020', '5_31_2020', '6_30_2020', '7_31_2020', '8_31_2020', '9_30_2020', '10_31_2020', '11_30_2020', '12_31_2020', 
-#         '1_31_2021', '2_28_2021']
-
-#     rows = []
-
-#     for key, value_list in zillow_complete_dict.items():
-#         row = []
-#         row.append(key)
-
-#         for val in value_list:
-#             row.append(val)
-
-#         rows.append(row)
-
-#     filename = 'zillow_complete.csv'
-#     with open(filename, 'w', newline='') as csvfile:
-#         csvwriter = csv.writer(csvfile) # creating a csv writer object
-#         csvwriter.writerow(fields) # writing the fields
-#         csvwriter.writerows(rows)  # writing the data rows
-
 
 ### Census Data
 def get_census_data(url):
@@ -219,7 +162,18 @@ def get_census_data(url):
         return CACHE_DICT[UNIQUE_CACHE_KEY]
 
 def parse_census_data(census_data):
-    '''
+    '''Parses Census dictionary and cleans data
+
+    Iterates through the dictionary produced by the get_census_data()
+    and removes capitalization, U.S. territories, and headers.
+
+    Parameters
+    ----------
+    census_data: a dictionary produced by get_census_data()
+
+    returns
+    -------
+    state_bach_dict: cleaned dictionary
     '''
     state_bach_dict = {}
 
@@ -235,7 +189,20 @@ def parse_census_data(census_data):
     return state_bach_dict
 
 def convert_census_to_csv(census_dict):
-    '''
+    '''Converts the Census Dictionary into a CSV file
+
+    The Census API was loaded into the file into a json and converted into a
+    dictionary for data cleaning. Now, it's being converted back to a CSV file 
+    in order for the data to be uploaded to the database. The function iterates 
+    through the dictionary and appends each key, value to a row in the csv file.
+
+    Parameters
+    ----------
+    census_dict: a specific census dictionary produced from parse_census_data()
+
+    returns:
+    --------
+    CSV file: 'census.csv'
     '''
     fields = ['State', 'Bachelor Degrees']
     rows = []
@@ -327,7 +294,18 @@ def build_wikipedia_dictionary():
     return wiki_dictionary
 
 def clean_wikipedia_dictionary(wiki_dict):
-    '''
+    '''Parses Wikipedia dictionary and cleans data
+
+    Iterates through the dictionary produced by the build_wikipedia_dictionary()
+    and removes capitalization, dollar signs, and commas.
+
+    Parameters
+    ----------
+    wiki_dict: a dictionary produced by build_wikipedia_dictionary()
+
+    returns
+    -------
+    new_dict: cleaned dictionary
     '''
     new_dict = {}
 
@@ -341,7 +319,21 @@ def clean_wikipedia_dictionary(wiki_dict):
     return new_dict
 
 def convert_wikipedia_to_csv(wiki_dict):
-    '''
+    '''Converts the Wikipedia Dictionary into a CSV file
+
+    The CSV file used in build_wikipedia_dictionary() converted the raw
+    data into a dictionary in order for data cleaning. Now, it's being converted
+    back to a CSV file in order for the data to be uploaded to the database.
+    The function iterates through the dictionary keys and appends each key, list of values
+    to a row in the csv file.
+
+    Parameters
+    ----------
+    wiki_dict: a specific wikipedia dictionary produced from clean_wikipedia_dictionary()
+
+    returns:
+    --------
+    CSV file: 'wikipedia.csv'
     '''
     fields = [
         'State',
@@ -381,64 +373,9 @@ Functions are stored in viz_functions.py
 '''
 
 ### Interactive Elements
-def list_all_states_above_budget(budget_input):
-    zillow_data = build_zillow_dictionary('zillow_by_state.csv')
-    zillow_list = [zillow_data]
-    new_zillow_dict = [dict([a, int(x)] for a, x in b.items()) for b in zillow_list][0]
-
-    #Confirm budget is above lowest value
-    minimum_value = min(new_zillow_dict, key=lambda k: new_zillow_dict[k])
-
-    if budget_input >= new_zillow_dict[minimum_value]:
-        affordable_dict = {}
-        for key, val in new_zillow_dict.items():
-            if budget_input >= val:
-                affordable_dict[key] = val
-
-        sorted_values = sorted(affordable_dict.values())
-        sorted_dict = {}
-        for i in sorted_values:
-            for key in affordable_dict.keys():
-                if affordable_dict[key] == i:
-                    sorted_dict[key] = affordable_dict[key]
-                    break
-
-        print('=' * 30)
-        print(f"You entered: {budget_input}")
-        amount = len(sorted_dict.keys())
-        print(f"You can afford to live in {amount} states. ")
-        print(f"\nThe states and their median home values are as follows (sorted by affordability):")
-        print('-' * 30)
-        for key, val in sorted_dict.items():
-            capped_key = key.capitalize()
-            print(f"{capped_key}: {val}")
-
-    else:
-        print('=' * 30)
-        print(f"You entered: {budget_input}, but there are no states under that budget. ")
-        budget_state, budget = min(new_zillow_dict.items(), key=lambda x: abs(budget_input - x[1]))
-        print(f"The closest state is {budget_state.capitalize()} with a median home value of {budget}. ")
-
-def incomeComparer(income_input):
-    '''
-    '''
-    print('=' * 30)
-    print(f"You entered: {income_input}")
-    wikipedia_data = build_wikipedia_dictionary()
-    wikipedia_data_cleaned = clean_wikipedia_dictionary(wikipedia_data)
-    # wikipedia_list = [wikipedia_data_cleaned]
-    # print(wikipedia_list)
-
-    new_wikipedia_dict = {}
-    for key, value_list in wikipedia_data_cleaned.items():
-        new_value_list = []
-        for value in value_list:
-            new_value = int(value)
-            new_value_list.append(new_value)
-        new_wikipedia_dict[key] = new_value_list[0] #Only income per capita
-
-    state, income = min(new_wikipedia_dict.items(), key=lambda x: abs(income_input - x[1]))
-    print(state.capitalize(), income)
+'''
+Functions are stored in interactive_elements.py
+'''
 
 
 
@@ -447,42 +384,25 @@ if __name__ == "__main__":
     #Calling Zillow functions
     zillow_data = build_zillow_dictionary('zillow_by_state.csv')
     convert_zillow_to_CSV(zillow_data)
-    # zillow_complete = build_zillow_complete_dict('zillow_by_state.csv')
-    # convert_zillow_complete_to_csv(zillow_complete)
 
     #Calling Census functions
     census_data = get_census_data('https://api.census.gov/data/2019/acs/acs5?get=NAME,B15003_022E&for=state:*&key=3d095bab381ec8a891e05c0fe05da954f2710317')
     census_data_parsed = parse_census_data(census_data=census_data)
-    #print(census_data_parsed)
     convert_census_to_csv(census_data_parsed)
 
     #Calling Wikipedia functions
     wikipedia_data = build_wikipedia_dictionary()
     wikipedia_data_cleaned = clean_wikipedia_dictionary(wikipedia_data)
-    #print(wikipedia_data_cleaned['north dakota'])
     convert_wikipedia_to_csv(wikipedia_data_cleaned)
 
     #Calling SQLite functions
     database_functions.create_connection('project.db')
     database_functions.create_zillow_table()
-    # database_functions.create_z2_table()
     database_functions.create_census_table()
     database_functions.create_wikipedia_table()
 
-    #Testing the Search by State functions
-    #list_zillow_details(state='Michigan', zillow_data=zillow_data)
-    #list_wikipedia_details(state='Michigan', wikipedia_data=wikipedia_data_cleaned)
-    #list_census_details(state='Michigan', census_data=census_data_parsed)
-    #list_all_details(state='Michigan', zillow_data=zillow_data, wikipedia_data=wikipedia_data_cleaned, census_data=census_data_parsed)
-    #find_state_with_closest_budget(100000)
-    #list_all_states_above_budget(100000)
-    #incomeComparer(35000)
-    # string_list = list(zillow_data.values())
-    # int_list = list(map(int, string_list))
-    # takeClosest(100000, int_list)
-
     #Interactive Console
-    # interactive_elements.opening_statement()
+    interactive_elements.opening_statement()
 
     while True:
 
@@ -526,7 +446,7 @@ if __name__ == "__main__":
                             break
 
                         elif budget_entry.isnumeric():
-                            list_all_states_above_budget(int(budget_entry))
+                            interactive_elements.list_all_states_above_budget(int(budget_entry))
 
                         else:
                             print(f"\n ")
@@ -546,7 +466,7 @@ if __name__ == "__main__":
                             break
 
                         elif income_entry.isnumeric():
-                            incomeComparer(int(income_entry))
+                            interactive_elements.incomeComparer(int(income_entry))
 
                         else:
                             print(f"\n ")
